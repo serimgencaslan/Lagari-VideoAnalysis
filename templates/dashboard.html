@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="layout">
+    <aside class="sidebar card">
+        <h3>Kaynak & Algoritma</h3>
+        <form method="post" action="{{ url_for('configure_stream') }}" class="form-vertical">
+            <div class="form-group">
+                <label class="form-label">Kaynak Tipi</label>
+                <label class="radio-inline">
+                    <input type="radio" name="source_type" value="video"
+                        {% if camera_config.source_type == 'video' %}checked{% endif %}>
+                    Video Dosyası
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="source_type" value="camera"
+                        {% if camera_config.source_type == 'camera' %}checked{% endif %}>
+                    Canlı Kamera
+                </label>
+            </div>
+
+            <div class="form-group" id="video_path_group">
+                <label class="form-label" for="video_path">Video Dosyası (server tarafında)</label>
+                <input class="form-input" type="text" id="video_path" name="video_path"
+                       value="{{ camera_config.video_path or 'videos/people.mp4' }}"
+                       placeholder="videos/people.mp4">
+                <p class="muted small">Örnek: videos/people.mp4, videos/traffic.mp4</p>
+            </div>
+
+            <div class="form-group" id="camera_index_group">
+                <label class="form-label" for="camera_index">Kamera Index</label>
+                <input class="form-input" type="number" id="camera_index" name="camera_index"
+                       value="{{ camera_config.camera_index or 0 }}">
+                <p class="muted small">Genelde 0 yeterli. Kamera yoksa hata mesajı gösterilir.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nesne Tespiti (YOLO + HOG)</label>
+                <label class="checkbox-inline">
+                    <input type="checkbox" name="detect_people"
+                           {% if camera_config.detect_people %}checked{% endif %}>
+                    İnsan
+                </label>
+                <label class="checkbox-inline">
+                    <input type="checkbox" name="detect_vehicles"
+                           {% if camera_config.detect_vehicles %}checked{% endif %}>
+                    Araç
+                </label>
+                <p class="muted small">YOLO dosyaları yoksa araç tespiti devre dışı kalır.</p>
+            </div>
+
+            <button class="btn btn-primary full-width" type="submit">
+                Kaynağı Başlat / Güncelle
+            </button>
+        </form>
+
+        {% if stream_error %}
+            <div class="card card-error">
+                <strong>Kaynak Hatası:</strong>
+                <p>{{ stream_error }}</p>
+            </div>
+        {% endif %}
+    </aside>
+
+    <section class="main-content">
+        <div class="card">
+            <h2>Canlı Görüntü</h2>
+            <div class="video-wrapper">
+                {% if stream_error %}
+                    <div class="video-error">
+                        Kaynak hatası: {{ stream_error }}
+                    </div>
+                {% else %}
+                    <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Video stream">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card stats-card">
+            <h2>Analiz Sonuçları</h2>
+            <div class="stats-row">
+                <div class="stat">
+                    <span class="stat-label">Canlı Kişi Sayısı</span>
+                    <span id="person-count" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Canlı Araç Sayısı</span>
+                    <span id="vehicle-count" class="stat-value">0</span>
+                </div>
+            </div>
+
+            <div class="alarm" id="alarm-box" style="display: none;">
+                <strong>Alarm:</strong>
+                <span id="alarm-text"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Son Tespitler</h2>
+            <table class="history-table">
+                <thead>
+                <tr>
+                    <th>Zaman (UTC)</th>
+                    <th>Kişi</th>
+                    <th>Araç</th>
+                </tr>
+                </thead>
+                <tbody id="history-body">
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+console.log("Dashboard JS yüklendi");
+
+function updateSourceFields() {
+    const videoGroup = document.getElementById("video_path_group");
+    const cameraGroup = document.getElementById("camera_index_group");
+    const checked = document.querySelector('input[name="source_type"]:checked');
+    const srcType = checked ? checked.value : "video";
+
+    if (srcType === "video") {
+        videoGroup.style.display = "block";
+        cameraGroup.style.display = "none";
+    } else {
+        videoGroup.style.display = "none";
+        cameraGroup.style.display = "block";
+    }
+}
+
+async function fetchStats() {
+    try {
+        const resp = await fetch("/api/stats");
+        if (!resp.ok) {
+            console.error("fetchStats HTTP error:", resp.status);
+            return;
+        }
+        const data = await resp.json();
+
+        document.getElementById("person-count").textContent = data.person_count;
+        document.getElementById("vehicle-count").textContent = data.vehicle_count;
+
+        const alarmBox = document.getElementById("alarm-box");
+        const alarmText = document.getElementById("alarm-text");
+
+        if (data.alarm) {
+            alarmBox.style.display = "block";
+            alarmText.textContent = data.alarm;
+        } else {
+            alarmBox.style.display = "none";
+            alarmText.textContent = "";
+        }
+    } catch (err) {
+        console.error("fetchStats error:", err);
+    }
+}
+
+async function fetchHistory() {
+    try {
+        const resp = await fetch("/api/history");
+        if (!resp.ok) {
+            console.error("fetchHistory HTTP error:", resp.status);
+            return;
+        }
+        const data = await resp.json();
+        const tbody = document.getElementById("history-body");
+        tbody.innerHTML = "";
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+            const tdTs = document.createElement("td");
+            const tdPerson = document.createElement("td");
+            const tdVehicle = document.createElement("td");
+
+            tdTs.textContent = row.ts;
+            tdPerson.textContent = row.person_count.toString();
+            tdVehicle.textContent = row.vehicle_count.toString();
+
+            tr.appendChild(tdTs);
+            tr.appendChild(tdPerson);
+            tr.appendChild(tdVehicle);
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error("fetchHistory error:", err);
+    }
+}
+
+// Başlangıçta alanları doğru göster
+updateSourceFields();
+
+// Radio değişince alanları güncelle
+document.querySelectorAll('input[name="source_type"]').forEach(r => {
+    r.addEventListener("change", updateSourceFields);
+});
+
+// Periyodik poll
+fetchStats();
+fetchHistory();
+setInterval(fetchStats, 1000);
+setInterval(fetchHistory, 5000);
+</script>
+{% endblock %}

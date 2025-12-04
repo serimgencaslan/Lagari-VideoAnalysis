@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title or "Video Analytics Platform" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<nav class="top-nav">
+    <div class="nav-left">
+        <span class="brand">🧠 Video Analytics</span>
+    </div>
+    <div class="nav-right">
+        {% if session.get('user') %}
+            <span class="nav-user">
+                {{ session['user']['username'] }} ({{ session['user']['role'] }})
+            </span>
+            <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+            {% if session['user']['role'] == 'admin' %}
+                <a class="nav-link" href="{{ url_for('admin_users') }}">Kullanıcı Yönetimi</a>
+            {% endif %}
+            <a class="nav-link nav-link-danger" href="{{ url_for('logout') }}">Çıkış</a>
+        {% endif %}
+    </div>
+</nav>
+
+<main class="page-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, msg in messages %}
+            <div class="flash flash-{{ category }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kullanıcı Yönetimi</h1>
+
+<div class="layout layout-admin">
+    <section class="card">
+        <h2>Mevcut Kullanıcılar</h2>
+        <table class="simple-table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Kullanıcı Adı</th>
+                <th>Rol</th>
+                <th>İşlemler</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for u in users %}
+                <tr>
+                    <td>{{ u.id }}</td>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.role }}</td>
+                    <td>
+                        <a class="btn btn-small" href="{{ url_for('admin_users_edit', user_id=u.id) }}">Düzenle</a>
+                        <form method="post"
+                              action="{{ url_for('admin_users_delete', user_id=u.id) }}"
+                              style="display:inline-block"
+                              onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                            <button class="btn btn-small btn-danger" type="submit">Sil</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>Yeni Kullanıcı Ekle</h2>
+        <form method="post" action="{{ url_for('admin_users_create') }}" class="form-vertical">
+            <label class="form-label" for="username">Kullanıcı Adı</label>
+            <input class="form-input" type="text" name="username" id="username" required>
+
+            <label class="form-label" for="password">Şifre</label>
+            <input class="form-input" type="password" name="password" id="password" required>
+
+            <label class="form-label" for="role">Rol</label>
+            <select class="form-input" name="role" id="role">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+            </select>
+
+            <button class="btn btn-primary" type="submit">Kaydet</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

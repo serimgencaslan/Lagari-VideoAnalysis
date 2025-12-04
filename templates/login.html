@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="center-wrapper">
+    <div class="card login-card">
+        <h2>Giriş Yap</h2>
+        <p class="muted">
+            Örnek hesaplar:
+            <code>admin / Admin123</code>,
+            <code>demo / Demo123</code>
+        </p>
+        <form method="post">
+            <label class="form-label" for="username">Kullanıcı Adı</label>
+            <input class="form-input" type="text" id="username" name="username" value="demo">
+
+            <label class="form-label" for="password">Şifre</label>
+            <input class="form-input" type="password" id="password" name="password" value="Demo123">
+
+            {% if error %}
+                <div class="form-error">{{ error }}</div>
+            {% endif %}
+
+            <button class="btn btn-primary" type="submit">Giriş</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

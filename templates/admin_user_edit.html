@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="center-wrapper">
+    <div class="card">
+        <h2>Kullanıcı Düzenle (#{{ user.id }})</h2>
+        <form method="post" class="form-vertical">
+            <label class="form-label" for="username">Kullanıcı Adı</label>
+            <input class="form-input" type="text" name="username" id="username"
+                   value="{{ user.username }}" required>
+
+            <label class="form-label" for="password">Şifre</label>
+            <input class="form-input" type="password" name="password" id="password">
+            <p class="muted small">Boş bırakırsan şifre değişmez.</p>
+
+            <label class="form-label" for="role">Rol</label>
+            <select class="form-input" name="role" id="role">
+                <option value="user" {% if user.role == 'user' %}selected{% endif %}>user</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+            </select>
+
+            <div class="form-actions">
+                <a class="btn" href="{{ url_for('admin_users') }}">İptal</a>
+                <button class="btn btn-primary" type="submit">Güncelle</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
