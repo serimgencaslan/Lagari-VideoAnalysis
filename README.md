@@ -21,3 +21,6 @@ Admin’in kullanıcı ekleme/silme/güncelleme yapabildiği küçük bir yönet
 6) docker build -t video-analytics .
 7) docker run -p 5000:5000 video-analytics
 
+
+User giriş bilgileri: (username: demo password: Demo123)
+Admin giriş bilgileri: (username: admin password: Admin123)
